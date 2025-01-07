@@ -78,4 +78,12 @@ module Protocol
     :tha, # Target MAC address
     :tpa, # Target IP address
   )
+
+  UDP = Struct.new(
+    "Udp",
+    :source, # Source Port
+    :dest,   # Destination Port
+    :len,    # Data Length
+    :check,  # Checksum
+  )
 end
