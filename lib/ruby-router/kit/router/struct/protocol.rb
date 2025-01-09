@@ -87,4 +87,24 @@ module Protocol
     :check,  # Checksum
     :body,
   )
+
+  BLE_DATA = Struct.new(
+    :src_mac, # Source MAC Address:      6Byte
+    :dst_mac, # Destination MAC Address: 6Byte
+    :data,    # Data
+  ) do
+    def map_from_array(arr)
+      self.src_mac = arr.slice(0..5)
+      self.dst_mac = arr.slice(6..11)
+      self.data = arr.slice(12..)
+    end
+
+    def bytes_str
+      [
+        pack_c(src_mac),
+        pack_c(dst_mac),
+        pack_c(data),
+      ].join
+    end
+  end
 end
