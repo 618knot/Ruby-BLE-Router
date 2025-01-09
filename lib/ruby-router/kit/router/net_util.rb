@@ -22,7 +22,7 @@ module NetUtil
       dhost: t_mac_packed,
       shost: s_mac_packed,
       type: [0x0806].pack("S>"),
-    ).to_binary
+    ).bytes_str
 
     packed_arp_header = [0x0001, 0x0800, 6, 4, 0x0001].pack("S>S>CCS>")
 
@@ -36,7 +36,7 @@ module NetUtil
       spa: s_ip_packed,
       tha: ([0x00] * 6).pack("C*"),
       tpa: t_ip_packed,
-    ).to_binary
+    ).bytes_str
 
     packet = ether_header + arp
 
@@ -66,7 +66,7 @@ module NetUtil
 
   def ip_checksum_for_sending(ip)
     ip.check = [0, 0]
-    ip_arr = ip.to_binary.bytes
+    ip_arr = ip.bytes_str.bytes
 
     ip.check = [checksum(ip_arr)].pack("S>").bytes
   end

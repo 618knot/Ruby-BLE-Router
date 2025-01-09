@@ -87,14 +87,14 @@ class SendReqDataManager
         dhost: ip2mac.hwaddr.pack("C*"),
         shost: analyzed_ether.src_mac_address.pack("C*"),
         type: analyzed_ether.type.pack("C*"),
-      ).to_binary
+      ).bytes_str
 
       ip_header = IP.new
       ip_header.copy_from_analyzed(analyzed_data[:ip])
       ip_header.ttl -= 1
 
       ip_checksum_for_sending(ip_header)
-      ip_bin = ip_header.to_binary
+      ip_bin = ip_header.bytes_str
 
       packet = ether_bin + ip_bin + src_packet.slice(ether_bin.length + ip_bin.length..)
 

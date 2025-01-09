@@ -31,7 +31,7 @@ module Protocol
       end
     end
 
-    def to_binary
+    def bytes_str
       [
         pack_c((version << 4) | ihl),
         pack_c(tos),
@@ -56,7 +56,7 @@ module Protocol
     :void,
   ) do
     
-    def to_binary
+    def bytes_str
       [
         pack_c(type),
         pack_c(code),
