@@ -6,7 +6,8 @@ module HeaderAnalyzer
       :source,
       :dest,
       :len,
-      :check
+      :check,
+      :body
     )
 
     def initialize(msg_bytes, ip)
@@ -19,6 +20,7 @@ module HeaderAnalyzer
       @dest = @msg_bytes.slice(2..3)   # Destination Port: 2Byte
       @len = @msg_bytes.slice(4..5)    # Data Length:      2Byte
       @check = @msg_bytes.slice(5..7)  # Checksum:        2Byte
+      @body = @msg_bytes.slice(8..)
 
       print_udp
     end
