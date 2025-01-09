@@ -85,5 +85,6 @@ module Protocol
     :dest,   # Destination Port
     :len,    # Data Length
     :check,  # Checksum
+    :body,
   )
 end
