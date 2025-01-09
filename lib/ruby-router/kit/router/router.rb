@@ -6,20 +6,27 @@ require_relative "../packet_analyzer/packet_analyzer"
 require_relative "router_base"
 require_relative "../constants"
 require_relative "send_req_data_manager"
+require_relative "ble_handler"
 require "ipaddr"
 
 module Router
   class Router < RouterBase
     include SocketUtils
     include NetUtil
-    
+
+    BLE_PORT = 4096.freeze
+
     #
     # @param [String] interface1 インターフェイス1の名前
     # @param [String] interface2 インターフェイス2の名前
     # @param [String] nextIp 送信先(ルータ)IP
+    # @param [String] ble_if BLEインターフェイスの名前
+    # @param [Array] ble_addresses BLEデバイスのアドレス
     #
-    def initialize(interface1, interface2, next_ip)
+    def initialize(interface1, interface2, next_ip, ble_if, ble_addresses)
       super(interface1, interface2, next_ip)
+
+      @ble_handler = BleHandler.new(ble_if, ble_addresses)
     end
 
     def run
@@ -93,7 +100,7 @@ module Router
         option: []
       )
 
-      r_iphdr.check = [checksum(r_iphdr.to_binary.bytes)].pack("S>").bytes
+      r_iphdr.check = [checksum(r_iphdr.bytes_str.bytes)].pack("S>").bytes
 
       icmp = ICMP.new(
         type: 11, # ICMP_TIME_EXCEEDED
@@ -102,9 +109,9 @@ module Router
         void: 0,
       )
 
-      icmp.check = checksum(icmp.to_binary.bytes)
+      icmp.check = checksum(icmp.bytes_str.bytes)
 
-      packet = r_ether_header.to_binary + r_iphdr.to_binary + icmp.to_binary + data.slice(14..(14 + 64))
+      packet = r_ether_header.bytes_str + r_iphdr.bytes_str + icmp.bytes_str + data.slice(14..(14 + 64))
 
       socket = @devices[device_no].socket
       socket.write(packet)
@@ -166,7 +173,7 @@ module Router
       ip_cpy = IP.new
       ip_cpy.copy_from_analyzed(ip)
 
-      ip_checksum = checksum(ip_cpy.to_binary.bytes)
+      ip_checksum = checksum(ip_cpy.bytes_str.bytes)
 
       unless valid_checksum?(ip_checksum)
         @logger.debug("#{@devices[device_no].if_name}: Bad IP checksum")
@@ -197,6 +204,8 @@ module Router
       if ip.daddr == @devices[device_no].addr
         @logger.debug("#{@devices[device_no].if_name}: Received for this device")
 
+        analyze_udp if ip.protocol == Constants::Ip::UDP
+
         return
       end
       ip2mac = Ip2MacManager.instance.ip_to_mac(tno, ip.daddr, nil, @devices)
@@ -205,6 +214,17 @@ module Router
       else
         forward_packet(ip2mac.hwaddr, tno, ip, data)
       end
+    end
+
+    def analyze_udp
+      udp = @analyzed_data[:udp]
+
+      return unless udp.dest == BLE_PORT
+
+      ble_data = BLE_DATA.new
+      ble_data.map_from_array(udp.body)
+
+      @ble_handler.write(ble_data.dst_mac, ble_data.data)
     end
 
     def handle_next(tno, ip, data)
@@ -226,9 +246,9 @@ module Router
         dest_mac.pack("C*"),
         analyzed_eth.dst_mac_address.pack("C*"),
         analyzed_eth.type.pack("C*"),
-      ).to_binary
+      ).bytes_str
 
-      ip_bin = ip.to_binary
+      ip_bin = ip.bytes_str
 
       packet = ether_bin + ip_bin + data[ether_bin.length + ip_bin.length..]
 
