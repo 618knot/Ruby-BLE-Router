@@ -125,4 +125,8 @@ module Constants
     ETH_P_ALL = 768.freeze # htons(ETH_P_ALL) netinet/if_ethre.h Every packet
     SIOCGIFINDEX = 0x8933.freeze # bits/ioctls.h
   end
+
+  module Udp
+    BLE_PORT = 4096.freeze
+  end
 end
