@@ -155,16 +155,16 @@ module BLE
       chr_if = get_chr_if(path)
       
       chr_if.StartNotify
-  
-      chr = @bluez.object(path)
-      chr.introspect
-  
-      chr["org.freedesktop.DBus.Properties"].on_signal("PropertiesChanged") do |_, value, _|
-        pp value["Value"]
-      end
     rescue DBus::Error => e
       puts "Failed to notify characteristic: #{e.message}"
       nil
+    end
+
+    def properties
+      chr = @bluez.object(path)
+      chr.introspect
+
+      chr["org.freedesktop.DBus.Properties"]
     end
   
     def stop_notify(path)
