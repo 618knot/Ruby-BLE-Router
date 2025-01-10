@@ -3,6 +3,8 @@ require_relative "../ble/ble"
 class BleHandler
   include BLE
 
+  attr_accessor :queue
+
   DATA_TRANSFER_SERVICE_UUID = "c8edc62d-8604-40c6-a4b4-8878d228ec1c".freeze
   UPLOAD_DATA_CHARACTERISTIC_UUID = "124a03e2-46c2-4ddd-8cf2-b643a1e91071".freeze
   UPLOAD_DESTINATION_CHARACTERISTIC_UUID = "d7299075-a344-48a7-82bb-2baa19838b2d".freeze
@@ -14,6 +16,7 @@ class BleHandler
   #
   def initialize(interface, device_addresses)
     @ble = BLE::BLE.new(interface)
+    @queue = Queue.new
     @devices = device_addresses.map do |addr|
       device = @ble.device(addr)
 
@@ -35,10 +38,22 @@ class BleHandler
     end
   end
 
+  def watch_notify
+    @ble.properties.on_signal("PropertiesChanged") do |_, value, _|
+      v = value["Value"]
+      @queue.push(
+        {
+          :value => v,
+          :ip => self.read(v.slice(0..5))
+        }
+      )
+    end
+  end
+
   def read(address)
     device_info = @devices[address.join(":")]
 
-    device_info[:device].read(device_info[:chr_paths][:upload_destination])
+    device_info[:device].read(device_info[:chr_paths][:upload_destination]).flatten
   end
 
   def write(address, value)
