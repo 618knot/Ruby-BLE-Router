@@ -1,9 +1,12 @@
 require_relative "../ble/ble"
+require_relative "ip2mac"
+require_relative "../custon_logger"
+require_relative "../constants"
+require_relative "net_util"
+require "ipaddr"
 
 class BleHandler
   include BLE
-
-  attr_accessor :queue
 
   DATA_TRANSFER_SERVICE_UUID = "c8edc62d-8604-40c6-a4b4-8878d228ec1c".freeze
   UPLOAD_DATA_CHARACTERISTIC_UUID = "124a03e2-46c2-4ddd-8cf2-b643a1e91071".freeze
@@ -16,7 +19,7 @@ class BleHandler
   #
   def initialize(interface, device_addresses)
     @ble = BLE::BLE.new(interface)
-    @queue = Queue.new
+    @logger = CustomLogger.new
     @devices = device_addresses.map do |addr|
       device = @ble.device(addr)
 
@@ -38,15 +41,43 @@ class BleHandler
     end
   end
 
-  def watch_notify
-    @ble.properties.on_signal("PropertiesChanged") do |_, value, _|
-      v = value["Value"]
-      @queue.push(
-        {
-          :value => v,
-          :ip => self.read(v.slice(0..5))
-        }
+  def watch_notify(devices, next_ip)
+    @ble.properties.on_signal("PropertiesChanged") do |_, v, _|
+      data = v["Value"]
+      ipaddr = self.read(nil)
+      src_mac = self.read(nil)
+      dst_mac = self.read(nil)
+
+      ble_data = BLE_DATA.new(
+        src_mac:,
+        dst_mac:,
+        length: [12 + value.length].pack("S>"),
+        data:,
       )
+
+      devices.each_with_index do |device, idx|
+        is_segment = IPAddr.new(ipaddr.join(":").to_i & IPAddr.new(device.netmask.join(".")).to_i) == IPAddr.new(device.subnet.join(".")).to_i
+
+        if ipaddr == device.addr
+          @logger.debug("#{ipaddr.if_name}: Received for this device")
+
+          break
+        end
+
+        ip2mac = Ip2MacManager.instance.ip_to_mac(idx, ipaddr, devices)
+        data = build_packet(ble_data, ipaddr, device, ip2mac.hwaddr)
+        if ip2mac.flag == :ng || !ip2mac.send_data.queue.empty?
+          ip2mac.send_data.append_send_data(
+            is_segment ? ipaddr : next_ip,
+            data,
+            data.size
+          )
+        else
+          device.socket.write(data)
+
+          break
+        end
+      end
     end
   end
 
@@ -80,5 +111,46 @@ class BleHandler
     end
 
     paths
+  end
+
+  private
+
+  def build_packet(ble_data, ipaddr, device, hwaddr)
+    dhost = hwaddr.nil? ? [0] * 6 : hwaddr
+    dhost = dhost.pack("C*")
+
+    eth = ETHER.new(
+      dhost:,
+      shost: device.hwaddr.pack("C*"),
+      type: [Constants::EtherTypes::IP].pack("S>")
+    )
+
+    ip = IP.new(
+      version: 4,
+      ihl: 20 / 4,
+      tos: 0,
+      tot_len: [20 + 6 + ble_data.length].pack("S>"),
+      id: [0, 0],
+      frag_off: [0, 0],
+      ttl: 64,
+      protocol: Constants::Ip::UDP,
+      check: nil,
+      saddr: device.addr,
+      daddr: ipaddr,
+      option: [],
+    )
+
+    ip.check = [checksum(ip.bytes_str.bytes)].pack("S>").bytes
+
+    port = [Constants::Udp::BLE_PORT].pack("S>")
+    udp = UDP.new(
+      source: port,
+      dest: port,
+      len: [14 + ble_data.bytes_str.length].pack("S>"),
+      check: [0, 0],
+      body: ble_data,
+    )
+
+    eth.bytes_str + ip.bytes_str + udp.bytes_str
   end
 end

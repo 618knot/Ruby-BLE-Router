@@ -14,8 +14,6 @@ module Router
     include SocketUtils
     include NetUtil
 
-    BLE_PORT = 4096.freeze
-
     #
     # @param [String] interface1 インターフェイス1の名前
     # @param [String] interface2 インターフェイス2の名前
@@ -30,7 +28,8 @@ module Router
     end
 
     def run
-      # @logger.info("Router is running...")
+      @ble_handler.start_notify
+      @ble_handler.watch_notify
       Thread.new { SendReqDataManager.instance.buffer_send }
       router
     end
@@ -219,7 +218,7 @@ module Router
     def analyze_udp
       udp = @analyzed_data[:udp]
 
-      return unless udp.dest == BLE_PORT
+      return unless udp.dest == Constants::Udp::BLE_PORT
 
       ble_data = BLE_DATA.new
       ble_data.map_from_array(udp.body)
