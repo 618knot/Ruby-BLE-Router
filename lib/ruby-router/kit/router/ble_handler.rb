@@ -11,6 +11,7 @@ class BleHandler
   DATA_TRANSFER_SERVICE_UUID = "c8edc62d-8604-40c6-a4b4-8878d228ec1c".freeze
   UPLOAD_DATA_CHARACTERISTIC_UUID = "124a03e2-46c2-4ddd-8cf2-b643a1e91071".freeze
   UPLOAD_DESTINATION_CHARACTERISTIC_UUID = "d7299075-a344-48a7-82bb-2baa19838b2d".freeze
+  UPLOAD_BLE_MAC_CHARACTERISTIC_UUID = "99afe545-946e-437f-905e-06206b8d0f15".freeze
   DOWNLOAD_DATA_CHARACTERISTIC_UUID = "b4bf78a1-b41a-4412-b3a9-97740d7003e0".freeze
 
   #
@@ -44,9 +45,9 @@ class BleHandler
   def watch_notify(devices, next_ip)
     @ble.properties.on_signal("PropertiesChanged") do |_, v, _|
       data = v["Value"]
-      ipaddr = self.read(nil)
-      src_mac = self.read(nil)
-      dst_mac = self.read(nil)
+      read_value = self.read(nil)
+      ipaddr = read_value[:destination]
+      dst_mac = read_value[:ble_mac]
 
       ble_data = BLE_DATA.new(
         src_mac:,
@@ -84,7 +85,9 @@ class BleHandler
   def read(address)
     device_info = @devices[address.join(":")]
 
-    device_info[:device].read(device_info[:chr_paths][:upload_destination]).flatten
+    hs = {}
+    hs[:destination] = device_info[:device].read(device_info[:chr_paths][:upload_destination]).flatten
+    hs[:ble_mac] = device_info[:device].read(device_info[:chr_paths][:upload_ble_mac]).flatten
   end
 
   def write(address, value)
@@ -105,6 +108,8 @@ class BleHandler
         paths[:upload_data] = c[:path]
       when UPLOAD_DESTINATION_CHARACTERISTIC_UUID
         paths[:upload_destination] = c[:path]
+      when UPLOAD_BLE_MAC_CHARACTERISTIC_UUID
+        paths[:upload_ble_mac] = c[:path]
       when DOWNLOAD_DATA_CHARACTERISTIC_UUID
         paths[:download_data] = c[:path]
       end
