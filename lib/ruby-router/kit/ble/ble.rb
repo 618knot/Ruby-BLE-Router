@@ -157,13 +157,6 @@ module BLE
       puts "Failed to notify characteristic: #{e.message}"
       nil
     end
-
-    def properties
-      chr = @bluez.object(path)
-      chr.introspect
-
-      chr["org.freedesktop.DBus.Properties"]
-    end
   
     def stop_notify(path)
       get_chr_if(path).StopNotify
