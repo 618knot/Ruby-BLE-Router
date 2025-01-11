@@ -3,10 +3,12 @@ require_relative "ip2mac"
 require_relative "../custon_logger"
 require_relative "../constants"
 require_relative "net_util"
+require_relative "struct/protocol"
 require "ipaddr"
 
 class BleHandler
   include BLE
+  include Protocol
 
   DATA_TRANSFER_SERVICE_UUID = "c8edc62d-8604-40c6-a4b4-8878d228ec1c".freeze
   UPLOAD_DATA_CHARACTERISTIC_UUID = "124a03e2-46c2-4ddd-8cf2-b643a1e91071".freeze
@@ -34,64 +36,37 @@ class BleHandler
     end.to_h
   end
 
-  def start_notify
-    @devices.each do |_, v|
+  def start_notify(ne_devices, next_ip)
+    @devices.each do |mac, v|
       device = v[:device]
+      path = v[:chr_paths][:upload_data]
 
-      device.start_notify(v[:chr_paths][:upload_data])
-    end
-  end
+      device.start_notify(path)
 
-  def watch_notify(devices, next_ip)
-    @ble.properties.on_signal("PropertiesChanged") do |_, v, _|
-      data = v["Value"]
-      read_value = self.read(nil)
-      ipaddr = read_value[:destination]
-      dst_mac = read_value[:ble_mac]
-
-      ble_data = BLE_DATA.new(
-        src_mac:,
-        dst_mac:,
-        length: [12 + value.length].pack("S>"),
-        data:,
-      )
-
-      devices.each_with_index do |device, idx|
-        is_segment = IPAddr.new(ipaddr.join(":").to_i & IPAddr.new(device.netmask.join(".")).to_i) == IPAddr.new(device.subnet.join(".")).to_i
-
-        if ipaddr == device.addr
-          @logger.debug("#{ipaddr.if_name}: Received for this device")
-
-          break
-        end
-
-        ip2mac = Ip2MacManager.instance.ip_to_mac(idx, ipaddr, devices)
-        data = build_packet(ble_data, ipaddr, device, ip2mac.hwaddr)
-        if ip2mac.flag == :ng || !ip2mac.send_data.queue.empty?
-          ip2mac.send_data.append_send_data(
-            is_segment ? ipaddr : next_ip,
-            data,
-            data.size
-          )
-        else
-          device.socket.write(data)
-
-          break
-        end
+      chr = device.bluez.object(path)
+      chr.introspect
+      chr["org.freedesktop.DBus.Properties"].on_signal("PropertiesChanged") do |i, value|
+        watch_notify(value["Value"], mac.split(":"), ne_devices, next_ip)
       end
     end
   end
 
-  def read(address)
+  def main_loop
+    @ble.main_loop
+  end
+
+  def read_addr(address)
     device_info = @devices[address.join(":")]
 
     hs = {}
     hs[:destination] = device_info[:device].read(device_info[:chr_paths][:upload_destination]).flatten
     hs[:ble_mac] = device_info[:device].read(device_info[:chr_paths][:upload_ble_mac]).flatten
+
+    hs
   end
 
   def write(address, value)
-    device_info = @devices[address.join(":")]
+    device_info = @devices[address.map { |o| o.to_s(16) }.join(":")]
 
     device_info[:device].write_without_response(device_info[:chr_paths][:download_data], value.bytes_str)
   end
@@ -119,6 +94,44 @@ class BleHandler
   end
 
   private
+
+  def watch_notify(data, src_mac, devices, next_ip)
+    read_value = self.read_addr(src_mac)
+    ipaddr = read_value[:destination]
+    src_mac = src_mac.map { |o| o.to_i(16) }
+    dst_mac = read_value[:ble_mac]
+
+    ble_data = BLE_DATA.new(
+      src_mac:,
+      dst_mac:,
+      length: [12 + data.length].pack("S>"),
+      data:,
+    )
+
+    devices.each_with_index do |device, idx|
+      is_segment = IPAddr.new(ipaddr.join(":").to_i & IPAddr.new(device.netmask.join(".")).to_i) == IPAddr.new(device.subnet.join(".")).to_i
+
+      if ipaddr == device.addr
+        @logger.debug("#{ipaddr.if_name}: Received for this device")
+
+        break
+      end
+
+      ip2mac = Ip2MacManager.instance.ip_to_mac(idx, ipaddr, devices)
+      data = build_packet(ble_data, ipaddr, device, ip2mac.hwaddr)
+      if ip2mac.flag == :ng || !ip2mac.send_data.queue.empty?
+        ip2mac.send_data.append_send_data(
+          is_segment ? ipaddr : next_ip,
+          data,
+          data.size
+        )
+      else
+        device.socket.write(data)
+
+        break
+      end
+    end
+  end
 
   def build_packet(ble_data, ipaddr, device, hwaddr)
     dhost = hwaddr.nil? ? [0] * 6 : hwaddr
