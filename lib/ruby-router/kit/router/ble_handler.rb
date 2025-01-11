@@ -19,7 +19,7 @@ class BleHandler
   # @param [Array] device_addresses Device Mac Addresses
   #
   def initialize(interface, device_addresses)
-    @ble = BLE::BLE.new(interface)
+    @ble = BLE.new(interface)
     @logger = CustomLogger.new
     @devices = device_addresses.map do |addr|
       device = @ble.device(addr)

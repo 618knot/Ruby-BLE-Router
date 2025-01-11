@@ -5,7 +5,6 @@ require "socket"
 
 module NetUtil
   include Protocol
-  include SocketUtils
 
   def send_arp_request(socket, t_ip, t_mac, s_ip, s_mac)
     raise StandardError if t_ip.class != Array
