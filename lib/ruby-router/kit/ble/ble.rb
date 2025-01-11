@@ -47,7 +47,7 @@ module BLE
     end
   end
   
-  private class Device
+  class Device
     attr_accessor :bluez
   
     @instances = {}
