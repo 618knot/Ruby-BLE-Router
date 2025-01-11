@@ -96,8 +96,6 @@ module BLE
         key.start_with?(@device_path)
       end
   
-      pp srv
-  
       srv = @objects.select do |key, value|
         key.start_with?(@device_path) && value.key?("org.bluez.GattService1")
       end
