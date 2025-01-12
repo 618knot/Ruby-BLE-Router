@@ -3,7 +3,6 @@
 require_relative "struct/protocol"
 require_relative "struct/base"
 require_relative "send_data_manager"
-require_relative "send_req_data_manager"
 require_relative "net_util"
 require_relative "../custon_logger"
 require "singleton"
