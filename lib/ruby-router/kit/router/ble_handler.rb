@@ -118,15 +118,15 @@ class BleHandler
       end
 
       ip2mac = Ip2MacManager.instance.ip_to_mac(idx, ipaddr, devices)
-      data = build_packet(ble_data, ipaddr, device, ip2mac.hwaddr)
+      packet = build_packet(ble_data, ipaddr, device, ip2mac.hwaddr)
       if ip2mac.flag == :ng || !ip2mac.send_data.queue.empty?
         ip2mac.send_data.append_send_data(
           is_segment ? ipaddr : next_ip,
-          data,
-          data.size
+          packet,
+          packet.size
         )
       else
-        device.socket.write(data)
+        device.socket.write(packet)
 
         break
       end
