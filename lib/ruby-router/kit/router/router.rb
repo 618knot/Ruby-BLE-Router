@@ -28,7 +28,7 @@ module Router
     end
 
     def run
-      @ble_handler.start_notify
+      @ble_handler.start_notify(@devices, @next_ip)
       Thread.new { @ble_handler.main_loop }
       sleep(10)
       Thread.new { SendReqDataManager.instance.buffer_send }
