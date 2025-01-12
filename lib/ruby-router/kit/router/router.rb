@@ -120,6 +120,8 @@ module Router
 
     def analyze_packet(device_no, data)
       @analyzed_data = PacketAnalyzer.new(data.bytes, disable_log: true).analyze
+      return if @analyzed_data.nil?
+
       ether = @analyzed_data[:ether]
 
       if ether.nil?
