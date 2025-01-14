@@ -28,11 +28,9 @@ module Router
     end
 
     def run
-      @ble_handler.start_notify(@devices, @next_ip)
-      Thread.new { @ble_handler.main_loop }
-      sleep(10)
+      @ble_handler.start_notify
+      @ble_handler.watch_notify
       Thread.new { SendReqDataManager.instance.buffer_send }
-
       router
     end
 
@@ -120,8 +118,6 @@ module Router
 
     def analyze_packet(device_no, data)
       @analyzed_data = PacketAnalyzer.new(data.bytes, disable_log: true).analyze
-      return if @analyzed_data.nil?
-
       ether = @analyzed_data[:ether]
 
       if ether.nil?
@@ -226,6 +222,8 @@ module Router
 
       ble_data = BLE_DATA.new
       ble_data.map_from_array(udp.body)
+
+      return if ble_data.dst_mac == [0] * 6
 
       @ble_handler.write(ble_data.dst_mac, ble_data.data)
     end
