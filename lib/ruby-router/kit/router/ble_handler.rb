@@ -102,6 +102,13 @@ class BleHandler
     src_mac = src_mac.map { |o| o.to_i(16) }
     dst_mac = read_value[:ble_mac]
 
+    dst_mac_str = dst_mac.map { |o| o.to_s(16) }.join(":")
+    if @devices.keys.include?(dst_mac_str)
+      self.write(dst_mac_str, data)
+
+      return
+    end
+
     ble_data = BLE_DATA.new(
       src_mac:,
       dst_mac:,
