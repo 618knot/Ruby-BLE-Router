@@ -122,7 +122,7 @@ module Router
       @analyzed_data = PacketAnalyzer.new(data.bytes, disable_log: true).analyze
      
       if @analyzed_data.nil?
-        @logger.debug("#{@devices[device_no].if_name}: Analyzed data is nil")
+        # @logger.debug("#{@devices[device_no].if_name}: Analyzed data is nil")
         return
       end
 
@@ -198,6 +198,7 @@ module Router
 
       sender_devices.each_with_index do |device,idx|
         next if device.nil?
+        next if device.netmask.nil? || device.subnet.nil?
 
         if (IPAddr.new(ip_cpy.daddr.join(".")).to_i & IPAddr.new(device.netmask.join(".")).to_i) == IPAddr.new(device.subnet.join(".")).to_i
           handle_segment(device_no, idx, ip_cpy, data)
