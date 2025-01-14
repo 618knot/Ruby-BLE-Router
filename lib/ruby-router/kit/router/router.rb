@@ -131,7 +131,7 @@ module Router
       bcast = Array.new(6, 0xff)
 
       if ether.dst_mac_address != device_hwaddr && ether.dst_mac_address != bcast
-        @logger.debug("#{@devices[device_no].if_name}: Destination MAC does not match => #{ether.dst_mac_address.map { |m| m.to_s(16) }.join(":")}")
+        # @logger.debug("#{@devices[device_no].if_name}: Destination MAC does not match => #{ether.dst_mac_address.map { |m| m.to_s(16) }.join(":")}")
         return
       end
 

@@ -22,7 +22,7 @@ module HeaderAnalyzer
       @check = @msg_bytes.slice(5..7)  # Checksum:        2Byte
       @body = @msg_bytes.slice(8..)
 
-      print_udp
+      # print_udp
     end
 
     private

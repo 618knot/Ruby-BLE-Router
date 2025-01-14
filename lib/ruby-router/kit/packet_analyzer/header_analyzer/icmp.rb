@@ -22,7 +22,7 @@ module HeaderAnalyzer
         @seq = self.to_hex_string(seq, is_formated: true)
       end
 
-      print_icmp
+      # print_icmp
     end
 
     #

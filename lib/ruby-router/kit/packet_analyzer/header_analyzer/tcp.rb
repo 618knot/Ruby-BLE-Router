@@ -30,7 +30,7 @@ module HeaderAnalyzer
       @check = @msg_bytes.slice(16..17)   # Checksum:         2Byte
       @urg_ptr = @msg_bytes.slice(18..19) # Emergency Pointer: 2Byte
 
-      print_tcp
+      # print_tcp
     end
 
     private

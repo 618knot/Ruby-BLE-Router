@@ -16,10 +16,10 @@ module HeaderAnalyzer
     #
     def analyze
       to_headers(@msg_bytes)
-      @logger.info("■■■■■ Ether Header ■■■■■")
-      @logger.debug("dst_mac_address=> #{macaddr_to_s(dst_mac_address)}")
-      @logger.debug("src_mac_address=> #{macaddr_to_s(src_mac_address)}")
-      @logger.debug("type=> #{type_to_s}")
+      # @logger.info("■■■■■ Ether Header ■■■■■")
+      # @logger.debug("dst_mac_address=> #{macaddr_to_s(dst_mac_address)}")
+      # @logger.debug("src_mac_address=> #{macaddr_to_s(src_mac_address)}")
+      # @logger.debug("type=> #{type_to_s}")
     end
   
     private

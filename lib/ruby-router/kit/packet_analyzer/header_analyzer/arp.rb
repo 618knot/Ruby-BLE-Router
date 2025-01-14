@@ -25,7 +25,7 @@ module HeaderAnalyzer
       @arp_tha = @msg_bytes.slice(18..23)  # Target MAC address: 6Byte
       @arp_tpa = @msg_bytes.slice(24..27)  # Target IP address:  4Byte
 
-      print_arp
+      # print_arp
     end
 
     private

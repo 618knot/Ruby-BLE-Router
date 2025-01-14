@@ -31,7 +31,7 @@ module HeaderAnalyzer
       @daddr = @msg_bytes.slice(16..19)                        # Destination Address: 4Byte
       @option = @ihl > 5 ? @msg_bytes.slice(20..@ihl * 4) : [] # Option
 
-      print_ip
+      # print_ip
     end
 
     private
