@@ -42,6 +42,8 @@ class BleHandler
       device = v[:device]
       path = v[:chr_paths][:upload_data]
 
+      return if path.nil?
+
       device.start_notify(path)
 
       chr = device.bluez.object(path)
