@@ -116,6 +116,8 @@ class BleHandler
       data:,
     )
 
+    @logger.info("BLE DATA: #{ble_data}")
+
     devices.each_with_index do |device, idx|
       next if device.netmask.nil? || device.subnet.nil?
 
