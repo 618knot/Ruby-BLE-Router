@@ -94,8 +94,6 @@ class BleHandler
     paths
   end
 
-  private
-
   def watch_notify(data, src_mac, devices, next_ip)
     read_value = self.read_addr(src_mac)
     ipaddr = read_value[:destination]
