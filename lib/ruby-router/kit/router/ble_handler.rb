@@ -166,7 +166,7 @@ class BleHandler
       version: 4,
       ihl: 20 / 4,
       tos: 0,
-      tot_len: [20 + 6 + ble_data_arr.length].pack("S>").bytes,
+      tot_len: [20 + 8 + ble_data_arr.length].pack("S>").bytes,
       id: [0, 0],
       frag_off: [0, 0],
       ttl: 64,
@@ -185,7 +185,7 @@ class BleHandler
     udp = UDP.new(
       source: port,
       dest: port,
-      len: [14 + ble_data_arr.length].pack("S>"),
+      len: [8 + ble_data_arr.length].pack("S>"),
       check: [0].pack("S>"),
       body: ble_data_arr.pack("C*"),
     )
