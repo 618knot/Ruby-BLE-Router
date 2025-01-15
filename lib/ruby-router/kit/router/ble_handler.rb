@@ -156,6 +156,8 @@ class BleHandler
       type: [Constants::EtherTypes::IP].pack("S>")
     )
 
+    @logger.info("#{eth}")
+
     ble_data_arr = ble_data.to_a.flatten
 
     ip = IP.new(
@@ -175,6 +177,8 @@ class BleHandler
 
     ip.check = [checksum(ip.bytes_str.bytes)].pack("S>").bytes
 
+    @logger.info("#{ip}")
+
     port = [Constants::Udp::BLE_PORT].pack("S>")
     udp = UDP.new(
       source: port,
@@ -183,6 +187,8 @@ class BleHandler
       check: [0].pack("S>"),
       body: ble_data_arr.pack("C*"),
     )
+
+    @logger.info("#{udp}")
 
     eth.bytes_str + ip.bytes_str + udp.bytes_str
   end
