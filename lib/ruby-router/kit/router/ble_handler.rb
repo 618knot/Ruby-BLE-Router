@@ -24,7 +24,7 @@ class BleHandler
   def initialize(interface, device_addresses)
     @ble = BLE.new(interface)
     @logger = CustomLogger.new
-    @devices = device_addresses.map do |addr|
+    @devices = device_addresses.map(&:upcase).map do |addr|
       device = @ble.device(addr)
 
       [
@@ -101,13 +101,7 @@ class BleHandler
     ipaddr = read_value[:destination]
     src_mac = src_mac.map { |o| o.to_i(16) }
     dst_mac = read_value[:ble_mac]
-
-    dst_mac_str = dst_mac.map { |o| o.to_s(16) }.join(":")
-    if @devices.keys.include?(dst_mac_str)
-      self.write(dst_mac_str, data)
-
-      return
-    end
+    dst_mac_str = dst_mac.map { |o| o.to_s(16) }.join(":").upcase
 
     ble_data = BLE_DATA.new(
       src_mac:,
@@ -126,7 +120,16 @@ class BleHandler
       if ipaddr == device.addr
         @logger.debug("#{device.if_name}: Received for this device")
 
-        break
+        break unless @devices.keys.include?(dst_mac_str) || dst_mac_str == "FF:FF:FF:FF:FF:FF"
+
+        dst_ble = []
+        if dst_mac_str == "FF:FF:FF:FF:FF:FF"
+          dst_ble = @devices.keys.delete(dst_mac_str)
+        else
+          dst_ble << dst_mac_str
+        end
+
+        dst_ble.each { |mac| self.write(mac, data) }
       end
 
       target_ip = is_segment ? ipaddr : next_ip
