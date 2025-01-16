@@ -69,9 +69,9 @@ class BleHandler
   end
 
   def write(address, value)
-    device_info = @devices[address.map { |o| o.to_s(16) }.join(":")]
+    device_info = @devices[address.map { |o| o.to_s(16) }.join(":").upcase]
 
-    device_info[:device].write_without_response(device_info[:chr_paths][:download_data], value.bytes_str)
+    device_info[:device].write_without_response(device_info[:chr_paths][:download_data], value)
   end
 
   private
