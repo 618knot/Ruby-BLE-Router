@@ -24,7 +24,8 @@ module Router
     def initialize(interface1, interface2, next_ip, ble_if, ble_addresses)
       super(interface1, interface2, next_ip)
 
-      @ble_handler = BleHandler.new(ble_if, ble_addresses)
+      @ble_addresses = ble_addresses.map(&:upcase)
+      @ble_handler = BleHandler.new(ble_if, @ble_addresses)
     end
 
     def run
@@ -32,7 +33,6 @@ module Router
       Thread.new { @ble_handler.main_loop }
       Thread.new { SendReqDataManager.instance.buffer_send }
 
-      sleep(10)
       router
     end
 
@@ -234,7 +234,10 @@ module Router
 
       return if ble_data.dst_mac == [0] * 6
 
-      @ble_handler.write(ble_data.dst_mac, ble_data.data)
+      dst_ble = ble_data.dst_mac == [0xff] * 6 ? @ble_addresses : [ble_data.dst_mac]
+      dst_ble.each do |mac|
+        @ble_handler.write(mac, ble_data.data)
+      end
     end
 
     def handle_next(tno, ip, data)

@@ -24,7 +24,7 @@ class BleHandler
   def initialize(interface, device_addresses)
     @ble = BLE.new(interface)
     @logger = CustomLogger.new
-    @devices = device_addresses.map(&:upcase).map do |addr|
+    @devices = device_addresses.map do |addr|
       device = @ble.device(addr)
 
       [
