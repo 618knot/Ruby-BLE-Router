@@ -106,7 +106,7 @@ class BleHandler
     ble_data = BLE_DATA.new(
       src_mac:,
       dst_mac:,
-      length: [12 + data.length].pack("S>").bytes,
+      length: [14 + data.length].pack("S>").bytes,
       data:,
     )
 
