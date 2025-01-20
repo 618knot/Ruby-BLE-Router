@@ -120,7 +120,7 @@ module Router
 
     def analyze_packet(device_no, data)
       @analyzed_data = PacketAnalyzer.new(data.bytes, disable_log: true).analyze
-     
+
       if @analyzed_data.nil?
         # @logger.debug("#{@devices[device_no].if_name}: Analyzed data is nil")
         return
@@ -193,13 +193,21 @@ module Router
         return
       end
 
+      dev_ipaddr = @devices.map(&:addr)
+      if dev_ipaddr.include?(ip_cpy.daddr)
+        @logger.debug("#{@devices[device_no].if_name}: Received for this device")
+
+        analyze_udp if ip_cpy.protocol == Constants::Ip::UDP
+
+        return
+      end
+
       sender_devices = @devices.clone
       sender_devices[device_no] = nil
 
       sender_devices.each_with_index do |device,idx|
         next if device.nil?
         next if device.netmask.nil? || device.subnet.nil?
-
         if (IPAddr.new(ip_cpy.daddr.join(".")).to_i & IPAddr.new(device.netmask.join(".")).to_i) == IPAddr.new(device.subnet.join(".")).to_i
           handle_segment(device_no, idx, ip_cpy, data)
         else
@@ -209,13 +217,6 @@ module Router
     end
 
     def handle_segment(device_no, tno, ip, data)
-      if ip.daddr == @devices[device_no].addr
-        @logger.debug("#{@devices[device_no].if_name}: Received for this device")
-
-        analyze_udp if ip.protocol == Constants::Ip::UDP
-
-        return
-      end
       ip2mac = Ip2MacManager.instance.ip_to_mac(tno, ip.daddr, nil, @devices)
       if ip2mac.flag == :ng || !ip2mac.send_data.queue.empty?
         ip2mac.send_data.append_send_data(ip.daddr, data, data.size)
@@ -227,7 +228,7 @@ module Router
     def analyze_udp
       udp = @analyzed_data[:udp]
 
-      return unless udp.dest == Constants::Udp::BLE_PORT
+      return unless udp.dest.pack("C*") == [Constants::Udp::BLE_PORT].pack("S>")
 
       ble_data = BLE_DATA.new
       ble_data.map_from_array(udp.body)
