@@ -72,6 +72,8 @@ class BleHandler
     device_info = @devices[address.map { |o| o.to_s(16) }.join(":").upcase]
 
     device_info[:device].write_without_response(device_info[:chr_paths][:download_data], value)
+
+    @logger.info("BLE: write-without-response done")
   end
 
   private
