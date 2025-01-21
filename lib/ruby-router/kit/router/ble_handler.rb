@@ -58,16 +58,6 @@ class BleHandler
     @ble.main_loop
   end
 
-  def read_addr(address)
-    device_info = @devices[address.join(":")]
-
-    hs = {}
-    hs[:destination] = device_info[:device].read(device_info[:chr_paths][:upload_destination]).flatten
-    hs[:ble_mac] = device_info[:device].read(device_info[:chr_paths][:upload_ble_mac]).flatten
-
-    hs
-  end
-
   def write(address, value)
     device_info = @devices[address.map { |o| o.to_s(16) }.join(":").upcase]
 
@@ -86,10 +76,6 @@ class BleHandler
       case c[:uuid]
       when UPLOAD_DATA_CHARACTERISTIC_UUID
         paths[:upload_data] = c[:path]
-      when UPLOAD_DESTINATION_CHARACTERISTIC_UUID
-        paths[:upload_destination] = c[:path]
-      when UPLOAD_BLE_MAC_CHARACTERISTIC_UUID
-        paths[:upload_ble_mac] = c[:path]
       when DOWNLOAD_DATA_CHARACTERISTIC_UUID
         paths[:download_data] = c[:path]
       end
