@@ -236,8 +236,10 @@ module Router
       return if ble_data.dst_mac == [0] * 6
 
       dst_ble = ble_data.dst_mac == [0xff] * 6 ? @ble_addresses : [ble_data.dst_mac]
-      dst_ble.each do |mac|
-        @ble_handler.write(mac, ble_data.data)
+      Thread.new do
+        dst_ble.each do |mac|
+          @ble_handler.write(mac, ble_data.data)
+        end
       end
     end
 

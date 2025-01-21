@@ -99,17 +99,17 @@ class BleHandler
   end
 
   def watch_notify(data, src_mac, devices, next_ip)
-    read_value = self.read_addr(src_mac)
-    ipaddr = read_value[:destination]
+    ipaddr = data.slice(0..3)
     src_mac = src_mac.map { |o| o.to_i(16) }
-    dst_mac = read_value[:ble_mac]
+    dst_mac = data.slice(4..9)
     dst_mac_str = dst_mac.map { |o| o.to_s(16) }.join(":").upcase
+    body = data.slice(10..)
 
     ble_data = BLE_DATA.new(
       src_mac:,
       dst_mac:,
-      length: [14 + data.length].pack("S>").bytes,
-      data:,
+      length: [14 + body.length].pack("S>").bytes,
+      data: body,
     )
 
     @logger.info("BLE DATA: #{ble_data}")
@@ -131,7 +131,7 @@ class BleHandler
           dst_ble << dst_mac_str
         end
 
-        dst_ble.each { |mac| self.write(mac, data) }
+        Thread.new { dst_ble.each { |mac| self.write(mac, data) } }
       end
 
       target_ip = is_segment ? ipaddr : next_ip
