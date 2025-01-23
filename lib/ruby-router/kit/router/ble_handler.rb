@@ -112,9 +112,9 @@ class BleHandler
 
         dst_ble = []
         if dst_mac_str == "FF:FF:FF:FF:FF:FF"
-          dst_ble = @devices.keys.delete(dst_mac_str)
+          dst_ble = @devices.keys.delete(dst_mac_str).map { |mac| mac.split(":").map { |o| o.to_i(16) } }
         else
-          dst_ble << dst_mac_str
+          dst_ble << dst_mac
         end
 
         Thread.new { dst_ble.each { |mac| self.write(mac, data) } }
